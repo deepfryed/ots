@@ -1,0 +1,6 @@
+ext/*.o
+ext/*.so
+ext/*.log
+ext/Makefile
+pkg/
+*.gemspec
