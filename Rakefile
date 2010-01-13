@@ -83,54 +83,6 @@ task :uninstall => [:clean] do
 	sh %{sudo gem uninstall #{NAME}}
 end
 
-
-Rake::RDocTask.new do |rdoc|
-	rdoc.rdoc_dir = 'html'
-	rdoc.options += RDOC_OPTS
-	rdoc.template = "resh"
-	if ENV['DOC_FILES']
-		rdoc.rdoc_files.include(ENV['DOC_FILES'].split(/,\s*/))
-	else
-		rdoc.rdoc_files.include('README')
-		rdoc.rdoc_files.include('lib/**/*.rb')
-		rdoc.rdoc_files.include('**/*.c')
-	end
-end
-
-desc "Publish to RubyForge"
-task :rubyforge => [:rdoc, :package] do
-	require 'rubyforge'
-	Rake::RubyForgePublisher.new(RUBYFORGE_PROJECT, 'takiuchi').upload
-end
-
-desc 'Package and upload the release to rubyforge.'
-task :release => [:clean, :package] do |t|
-	v = ENV["VERSION"] or abort "Must supply VERSION=x.y.z"
-	abort "Versions don't match #{v} vs #{VERS}" unless v == VERS
-	pkg = "pkg/#{NAME}-#{VERS}"
-
-	require 'rubyforge'
-	rf = RubyForge.new.configure
-	puts "Logging in"
-	rf.login
-
-	c = rf.userconfig
-	c["preformatted"] = true
-
-	files = [
-		"#{pkg}.tgz",
-		"#{pkg}.gem"
-	].compact
-
-	puts "Releasing #{NAME} v. #{VERS}"
-	rf.add_release RUBYFORGE_PROJECT, NAME, VERS, *files
-end
-
-desc 'Show information about the gem.'
-task :debug_gem do
-	puts spec.to_ruby
-end
-
 desc 'Update gem spec'
 task :gemspec do
   open("#{NAME}.gemspec", 'w') do |file|
