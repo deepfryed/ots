@@ -18,7 +18,7 @@ RUBYFORGE_PROJECT = "ots"
 HOMEPATH          = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 BIN_FILES         = %w( )
 
-VERS              = "0.1.0"
+VERS              = File.open(File.dirname(__FILE__) + '/VERSION') {|f| f.read }
 REV = File.read(".svn/entries")[/committed-rev="(d+)"/, 1] rescue nil
 CLEAN.include ['**/.*.sw?', '*.gem', '.config']
 RDOC_OPTS = [
