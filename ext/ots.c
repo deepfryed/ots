@@ -13,6 +13,13 @@ static VALUE eLoadError;
 static VALUE eRuntimeError;
 static VALUE eArgumentError;
 
+typedef struct {
+  gchar *word;    /* the word */
+  gchar *stem;    /*stem of the word*/
+  gint occ;     /* how many times have we seen this word in the text? */
+} OtsWordEntery;
+
+
 /* helpers */
 
 OtsArticle* get_article(VALUE self, gboolean error_on_missing) {
@@ -97,6 +104,20 @@ VALUE rb_ots_article_title(VALUE self) {
     return Qnil;
 }
 
+VALUE rb_ots_article_keywords(VALUE self) {
+  OtsArticle *article = get_article(self, TRUE);
+  GList* words = article->ImpWords;
+  VALUE iwords = rb_ary_new();
+  while (words != NULL) {
+    OtsWordEntery *data = (OtsWordEntery *)words->data;
+    if (data != NULL && strlen(data->word) > 0)
+      rb_ary_push(iwords, rb_str_new(data->word, strlen(data->word)));
+    words = words->next;
+  }
+
+  return iwords;
+}
+
 VALUE rb_ots_get_highlighted_lines(VALUE self) {
   OtsArticle *article = get_article(self, TRUE);
   OtsSentence *sentence;
@@ -147,4 +168,5 @@ void Init_ots(void) {
     rb_define_method(rb_cOTS, "highlighted_content", rb_ots_get_highlighted_lines, 0);
     rb_define_method(rb_cOTS, "summarize", rb_summarize, 1);
     rb_define_method(rb_cOTS, "title", rb_ots_article_title, 0);
+    rb_define_method(rb_cOTS, "keywords", rb_ots_article_keywords, 0);
 }
