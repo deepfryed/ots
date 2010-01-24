@@ -1,6 +1,7 @@
-ext/*.o
+ext/*
+!ext/extconf.rb
+!ext/*.c
+!ext/*.h
 ext/*.so
-ext/*.log
-ext/Makefile
 pkg/
-*.gemspec
+tmp/

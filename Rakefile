@@ -2,90 +2,58 @@ require 'rubygems'
 require 'rake'
 require 'rake/clean'
 require 'rake/testtask'
-require 'rake/packagetask'
-require 'rake/gempackagetask'
 require 'rake/rdoctask'
-require 'rake/contrib/rubyforgepublisher'
-require 'rake/contrib/sshpublisher'
-require 'fileutils'
-include FileUtils
+require 'rake/extensiontask'
 
-NAME              = "ots"
-AUTHORS           = ["Bharane Rathna"]
-EMAIL             = "deepfryed@gmail.com"
-DESCRIPTION       = "libots interface for ruby"
-RUBYFORGE_PROJECT = "ots"
-HOMEPATH          = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
-BIN_FILES         = %w( )
+CLEAN << FileList[ 'ext/Makefile', 'ext/ots.so' ]
 
-VERS              = File.open(File.dirname(__FILE__) + '/VERSION') {|f| f.read }
-REV = File.read(".svn/entries")[/committed-rev="(d+)"/, 1] rescue nil
-CLEAN.include ['**/.*.sw?', '*.gem', '.config']
-RDOC_OPTS = [
-	'--title', "#{NAME} documentation",
-	"--charset", "utf-8",
-	"--opname", "index.html",
-	"--line-numbers",
-	"--main", "README",
-	"--inline-source",
-]
-
-task :default => [:test]
-task :package => [:clean]
-
-Rake::TestTask.new("test") do |t|
-	t.libs   << "test"
-	t.pattern = "test/**/*_test.rb"
-	t.verbose = true
+begin
+  require 'jeweler'
+rescue LoadError
+  puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
 end
 
-spec = Gem::Specification.new do |s|
-	s.name              = NAME
-	s.version           = VERS
-	s.platform          = Gem::Platform::RUBY
-	s.has_rdoc          = true
-	s.extra_rdoc_files  = ["README" ]
-	s.rdoc_options     += RDOC_OPTS + ['--exclude', '^(examples|extras)/']
-	s.summary           = DESCRIPTION
-	s.description       = DESCRIPTION
-	s.authors           = AUTHORS
-	s.email             = EMAIL
-	s.homepage          = HOMEPATH
-	s.executables       = BIN_FILES
-	s.rubyforge_project = RUBYFORGE_PROJECT
-	s.bindir            = "bin"
-	s.require_path      = "lib"
-	s.test_files        = Dir["test/*_test.rb"]
-	s.required_ruby_version = '~> 1.8'
-
-	s.files = %w(README Rakefile) +
-		Dir.glob("{bin,doc,test,lib,templates,generator,extras,website,script}/**/*") + 
-		Dir.glob("*.{h,c,rb}") +
-		Dir.glob("examples/**/*.rb") +
-		Dir.glob("tools/*.rb") +
-		Dir.glob("ext/*.{h,c}")
-
-	s.extensions = ["ext/extconf.rb"]
+Jeweler::Tasks.new do |gem|
+  gem.name        = 'ots'
+  gem.summary     = 'Open Text Summarizer interface for Ruby.'
+  gem.description = 'Ruby interface to libots libraries for unix.'
+  gem.email       = 'deepfryed@gmail.com'
+  gem.homepage    = 'http://github.com/deepfryed/ots'
+  gem.authors     = ['Bharanee Rathna']
+  
+  gem.add_development_dependency 'shoulda', '>= 2.10'
+  
+  gem.files = FileList[
+    'lib/**/*.rb',
+    'ext/*.{h,c}',
+    'VERSION',
+    'README'
+  ]
+  gem.extensions  = FileList[ 'ext/**/extconf.rb' ]
+  gem.test_files  = FileList[ 'test/**/*_test.rb' ]
 end
 
-Rake::GemPackageTask.new(spec) do |p|
-	p.need_tar = true
-	p.gem_spec = spec
+Jeweler::GemcutterTasks.new
+
+Rake::ExtensionTask.new do |ext|
+  ext.name    = 'ots'
+  ext.ext_dir = 'ext'
+  ext.lib_dir = 'ext'
 end
 
-task :install do
-	name = "#{NAME}-#{VERS}.gem"
-	sh %{rake package}
-	sh %{sudo gem install pkg/#{name}}
+Rake::RDocTask.new do |rdoc|
+  version = File.exist?('VERSION') ? File.read('VERSION') : ""
+  rdoc.rdoc_dir = 'rdoc'
+  rdoc.title = "ots #{version}"
+  rdoc.rdoc_files.include('README*')
+  rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
-task :uninstall => [:clean] do
-	sh %{sudo gem uninstall #{NAME}}
+Rake::TestTask.new(:test) do |test|
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/*_test.rb'
+  test.verbose = true
 end
 
-desc 'Update gem spec'
-task :gemspec do
-  open("#{NAME}.gemspec", 'w') do |file|
-    file.write spec.to_ruby
-  end
-end
+task :test    => [ :compile, :check_dependencies ]
+task :default => :test

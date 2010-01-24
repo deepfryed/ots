@@ -141,16 +141,23 @@ VALUE rb_ots_get_highlighted_lines(VALUE self) {
 }
 
 VALUE rb_summarize(VALUE self, VALUE options) {
+
   VALUE lines = rb_hash_aref(options, ID2SYM(rb_intern("lines")));
   VALUE percent = rb_hash_aref(options, ID2SYM(rb_intern("percent")));
+
   if (lines != Qnil && percent != Qnil) {
     rb_ots_free_article(self);
-    rb_raise(eArgumentError, "Cannot summarize on lines & percent, only one is allowed");
+    rb_raise(eArgumentError, "Cannot summarize on :lines & :percent, only one is allowed");
   }
+  else if (lines == Qnil && percent == Qnil) {
+    rb_ots_free_article(self);
+    rb_raise(eArgumentError, "Need either :lines or :percent to summarize");
+  }
+
   if (lines != Qnil)
-    rb_ots_highlight_lines(self, rb_to_int(lines));
+    rb_ots_highlight_lines(self, FIX2LONG(lines));
   else if (percent != Qnil) 
-    rb_ots_highlight_percent(self, rb_to_int(percent));
+    rb_ots_highlight_percent(self, FIX2LONG(percent));
   return rb_ots_get_highlighted_lines(self);
 }
 
