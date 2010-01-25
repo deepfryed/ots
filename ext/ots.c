@@ -155,9 +155,9 @@ VALUE rb_summarize(VALUE self, VALUE options) {
   }
 
   if (lines != Qnil)
-    rb_ots_highlight_lines(self, FIX2LONG(lines));
+    rb_ots_highlight_lines(self, FIX2INT(lines));
   else if (percent != Qnil) 
-    rb_ots_highlight_percent(self, FIX2LONG(percent));
+    rb_ots_highlight_percent(self, FIX2INT(percent));
   return rb_ots_get_highlighted_lines(self);
 }
 
