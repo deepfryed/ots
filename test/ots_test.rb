@@ -1,6 +1,6 @@
 require 'helper'
 
-class OTSTitleTest < Test::Unit::TestCase
+class OTSTest < Test::Unit::TestCase
 
   SAMPLE = <<-TEXT
     The hawksbill turtle is a critically endangered sea turtle belonging to the family Cheloniidae.
