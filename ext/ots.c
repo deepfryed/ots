@@ -44,17 +44,17 @@ void rb_ots_free_article(VALUE self) {
   ots_free_article(article);
 }
 
-/* ruby 1.9 only */
-#ifdef RUBY_VM
+VALUE rb_string(char *utf8) {
+  VALUE str = rb_str_new(utf8, strlen(utf8));
 
-VALUE force_utf8_string(char *utf8, size_t len) {
-  VALUE str = rb_str_new(utf8, len);
-  rb_enc_associate(str, rb_to_encoding(rb_str_new2("UTF-8")));
-  ENC_CODERANGE_CLEAR(str);
+  /* ruby 1.9 only - force bytestream to utf8 */
+  #ifdef RUBY_VM
+    rb_enc_associate(str, rb_to_encoding(rb_str_new2("UTF-8")));
+    ENC_CODERANGE_CLEAR(str);
+  #endif
+
   return str;
 }
-
-#endif
 
 /* ruby libots methods/wrappers */
 
@@ -117,7 +117,7 @@ VALUE rb_ots_highlight_percent(VALUE self, int percent) {
 VALUE rb_ots_article_title(VALUE self) {
   OtsArticle *article = get_article(self, TRUE);
   if (article->title != NULL)
-    return rb_str_new(article->title, strlen(article->title));
+    return rb_string(article->title);
   else
     return Qnil;
 }
@@ -129,7 +129,7 @@ VALUE rb_ots_article_keywords(VALUE self) {
   while (words != NULL) {
     OtsWordEntery *data = (OtsWordEntery *)words->data;
     if (data != NULL && strlen(data->word) > 0)
-      rb_ary_push(iwords, rb_str_new(data->word, strlen(data->word)));
+      rb_ary_push(iwords, rb_string(data->word));
     words = words->next;
   }
 
@@ -148,13 +148,7 @@ VALUE rb_ots_get_highlighted_lines(VALUE self) {
       size_t len;
       unsigned char* content = ots_get_line_text(sentence, TRUE, &len);
       VALUE hlt_line = rb_hash_new();
-
-      #ifdef RUBY_VM
-        rb_hash_aset(hlt_line, ID2SYM(rb_intern("sentence")), force_utf8_string((char *)content, len));
-      #else
-        rb_hash_aset(hlt_line, ID2SYM(rb_intern("sentence")), rb_str_new((char *)content, len));
-      #endif
-
+      rb_hash_aset(hlt_line, ID2SYM(rb_intern("sentence")), rb_string((char *)content));
       rb_hash_aset(hlt_line, ID2SYM(rb_intern("score")), LONG2FIX(sentence->score));
       rb_ary_push(hlt_lines, hlt_line);
     }
