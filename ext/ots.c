@@ -1,4 +1,10 @@
 #include <ruby.h>
+
+/* ruby 1.9 only */
+#ifdef RUBY_VM
+  #include <ruby/encoding.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,6 +43,18 @@ void rb_ots_free_article(VALUE self) {
   OtsArticle *article = DATA_PTR(rb_iv_get(self, "@article"));
   ots_free_article(article);
 }
+
+/* ruby 1.9 only */
+#ifdef RUBY_VM
+
+VALUE force_utf8_string(char *utf8, size_t len) {
+  VALUE str = rb_str_new(utf8, len);
+  rb_enc_associate(str, rb_to_encoding(rb_str_new2("UTF-8")));
+  ENC_CODERANGE_CLEAR(str);
+  return str;
+}
+
+#endif
 
 /* ruby libots methods/wrappers */
 
@@ -130,7 +148,13 @@ VALUE rb_ots_get_highlighted_lines(VALUE self) {
       size_t len;
       unsigned char* content = ots_get_line_text(sentence, TRUE, &len);
       VALUE hlt_line = rb_hash_new();
-      rb_hash_aset(hlt_line, ID2SYM(rb_intern("sentence")), rb_str_new((char *)content, len));
+
+      #ifdef RUBY_VM
+        rb_hash_aset(hlt_line, ID2SYM(rb_intern("sentence")), force_utf8_string((char *)content, len));
+      #else
+        rb_hash_aset(hlt_line, ID2SYM(rb_intern("sentence")), rb_str_new((char *)content, len));
+      #endif
+
       rb_hash_aset(hlt_line, ID2SYM(rb_intern("score")), LONG2FIX(sentence->score));
       rb_ary_push(hlt_lines, hlt_line);
     }

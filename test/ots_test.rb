@@ -12,7 +12,7 @@ class OTSTest < Test::Unit::TestCase
     should 'extract title from given document' do
       ots = OTS.new
       ots.parse SAMPLE
-      assert_equal ots.title, 'species,turtle,subspecies,pacific,atlantic'
+      assert_equal 'species,turtle,subspecies,pacific,atlantic', ots.title
     end
   end
 
@@ -20,10 +20,10 @@ class OTSTest < Test::Unit::TestCase
     should 'extract keywords from given document' do
       ots = OTS.new
       ots.parse SAMPLE
-      assert_equal ots.keywords, %W(
+      assert_equal %W(
         species turtle subspecies pacific atlantic distribution worldwide genus cheloniidae family
         belonging sea endangered critically hawksbill
-      )
+      ), ots.keywords
     end
   end
 
@@ -35,7 +35,7 @@ class OTSTest < Test::Unit::TestCase
         { :sentence => value[:sentence].gsub(/\n\s*/, ' ').strip, :score => value[:score] }
       end
 
-      assert_equal lines, [
+      assert_equal [
         {
           :sentence => "The hawksbill turtle is a critically endangered sea turtle belonging to the family Cheloniidae.",
           :score    => 48
@@ -44,7 +44,18 @@ class OTSTest < Test::Unit::TestCase
           :sentence => "The species has a worldwide distribution, with Atlantic and Pacific subspecies.",
           :score    => 20
         }
-      ]
+      ], lines
+
+    end
+
+    should 'utf8 encode strings properly' do
+      ots = OTS.new
+      text = "The hawksbill turtle\xE2\x80\x93is critically endangered."
+      text.force_encoding('UTF-8') if RUBY_VERSION >= "1.9"
+
+      ots.parse(text)
+      summary = ots.summarize(:lines => 1).first[:sentence]
+      assert_equal text, summary
     end
   end
 
