@@ -1,6 +1,7 @@
 require 'mkmf'
 
-$CFLAGS = "-I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -Wall"
+$CFLAGS  = "-I/usr/include/glib-2.0 -I/usr/lib/glib-2.0/include -Wall"
+$LDFLAGS = "-lglib-2.0"
 
 dir_config("libots", ["/usr/local", "/opt/local", "/usr"])
 
