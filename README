@@ -17,7 +17,7 @@ USAGE:
 
   >> require "rubygems"
   >> require "ots"
-  >> summarizer = ots.new
+  >> summarizer = OTS.new
   >> summarizer.parse("I think I need some ice cream to cool me off. It is too hot down under")
   >> summarizer.title
   => [ "hot","cool","cream","ice","think" ]
