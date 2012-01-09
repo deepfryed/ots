@@ -1,197 +1,148 @@
-#include <ruby.h>
+#include "ots.h"
 
-/* ruby 1.9 only */
-#ifdef RUBY_VM
-  #include <ruby/encoding.h>
-#endif
+static VALUE mOTS, cArticle;
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+static void article_free(OtsArticle *article) {
+    if (article)
+      ots_free_article(article);
+}
 
-#include <libots-1/ots/libots.h>
+VALUE article_allocate(VALUE klass) {
+    OtsArticle *article = ots_new_article();
+    return Data_Wrap_Struct(klass, 0, article_free, article);
+}
 
-#define ID_CONST_GET rb_intern("const_get")
-#define CONST_GET(scope, constant) (rb_funcall(scope, ID_CONST_GET, 1, rb_str_new2(constant)))
+OtsArticle* article_handle(VALUE self) {
+    OtsArticle *article = 0;
+    Data_Get_Struct(self, OtsArticle, article);
+    if (!article)
+        rb_raise(rb_eArgError, "invalid OTS::Article instance");
+    return article;
+}
 
-static VALUE rb_cOTS;
-static VALUE eLoadError;
-static VALUE eRuntimeError;
-static VALUE eArgumentError;
+void article_load_dictionary(OtsArticle *article, char *name) {
+  if (!ots_load_xml_dictionary(article, name)) {
+    rb_raise(rb_eLoadError, "Could not find dictionary file: %s", name);
+  }
+}
+
+VALUE article_initialize(int argc, VALUE *argv, VALUE self) {
+    VALUE text, dictionary;
+    OtsArticle *article = article_handle(self);
+
+    rb_scan_args(argc, argv, "11", &text, &dictionary);
+
+    if (TYPE(text) != T_STRING)
+        rb_raise(rb_eArgError, "invalid +text+");
+
+    if (NIL_P(dictionary))
+        article_load_dictionary(article, "en");
+    else
+        article_load_dictionary(article, CSTRING(dictionary));
+
+    ots_parse_stream(RSTRING_PTR(text), RSTRING_LEN(text), article);
+    ots_grade_doc(article);
+
+    rb_iv_set(self, "@encoding", (VALUE)rb_enc_get(text));
+
+    return self;
+}
+
+
+VALUE article_summary(OtsArticle *article, rb_encoding *encoding) {
+  OtsSentence *sentence;
+
+  GList *line_ptr  = article->lines;
+  VALUE summary    = rb_ary_new();
+
+  while (line_ptr != NULL) {
+    sentence = (OtsSentence *)line_ptr->data;
+
+    if (sentence->selected) {
+      size_t size;
+      unsigned char* content = ots_get_line_text(sentence, TRUE, &size);
+
+      VALUE line = rb_hash_new();
+      rb_hash_aset(line, ID2SYM(rb_intern("sentence")), rb_enc_str_new((char *)content, size, encoding));
+      rb_hash_aset(line, ID2SYM(rb_intern("score")),    LONG2FIX(sentence->score));
+      rb_ary_push(summary, line);
+    }
+
+    line_ptr = g_list_next(line_ptr);
+  }
+
+  return summary;
+}
+
+VALUE article_summarize(VALUE self, VALUE options) {
+    VALUE lines, percent;
+    OtsArticle *article = article_handle(self);
+
+    if (TYPE(options) != T_HASH)
+        rb_raise(rb_eArgError, "expect an options hash");
+
+    lines   = rb_hash_aref(options, ID2SYM(rb_intern("lines")));
+    percent = rb_hash_aref(options, ID2SYM(rb_intern("percent")));
+
+    if (NIL_P(lines) && NIL_P(percent))
+        rb_raise(rb_eArgError, "expect +lines+ or +percent+ to be provided");
+
+    if (lines != Qnil)
+        ots_highlight_doc_lines(article, NUM2INT(lines));
+    else
+        ots_highlight_doc(article, NUM2INT(percent));
+
+    return article_summary(article, (rb_encoding *)rb_iv_get(self, "@encoding"));
+}
+
+VALUE article_title(VALUE self) {
+    OtsArticle *article = article_handle(self);
+    return (article->title ? rb_enc_str_new2(article->title, (rb_encoding*)rb_iv_get(self, "@encoding")) : Qnil);
+}
 
 typedef struct {
   gchar *word;    /* the word */
   gchar *stem;    /*stem of the word*/
   gint occ;     /* how many times have we seen this word in the text? */
-} OtsWordEntery;
+} OtsWordEntry;
 
 
-/* helpers */
+VALUE article_keywords(VALUE self) {
+    OtsArticle *article = article_handle(self);
+    rb_encoding *encoding = (rb_encoding*)rb_iv_get(self, "@encoding");
 
-OtsArticle* get_article(VALUE self, gboolean error_on_missing) {
-  VALUE rb_article_object = rb_iv_get(self, "@article");
-  if (rb_article_object == Qnil) {
-    if (error_on_missing)
-      rb_raise(eRuntimeError, "libots document not initialized properly. Did you forget to parse content ?");
-    else
-      return NULL;
-  }
-  return (OtsArticle *)DATA_PTR(rb_article_object);
-}
+    VALUE words     = rb_ary_new();
+    GList* word_ptr = article->ImpWords;
 
-void rb_ots_free_article(VALUE self) {
-  OtsArticle *article = DATA_PTR(rb_iv_get(self, "@article"));
-  ots_free_article(article);
-}
-
-VALUE rb_string(char *utf8) {
-  VALUE str = rb_str_new(utf8, strlen(utf8));
-
-  /* ruby 1.9 only - force bytestream to utf8 */
-  #ifdef RUBY_VM
-    rb_enc_associate(str, rb_to_encoding(rb_str_new2("UTF-8")));
-    ENC_CODERANGE_CLEAR(str);
-  #endif
-
-  return str;
-}
-
-/* ruby libots methods/wrappers */
-
-VALUE rb_ots_init(VALUE self) {
-  OtsArticle *article = get_article(self, FALSE);
-  VALUE dict = Qnil;
-  if (article != NULL) {
-    dict = rb_iv_get(self, "@dict");
-    ots_free_article(article);
-  }
-  article = ots_new_article();
-  rb_iv_set(self, "@article", Data_Wrap_Struct(rb_cObject, 0, 0, article));
-  rb_iv_set(self, "@dict", dict);
-  return self;
-}
-
-VALUE rb_ots_load_dictionary(VALUE self, VALUE dict) {
-  char *dict_cstr = "en";
-  if (dict != Qnil) dict_cstr = RSTRING_PTR(dict);
-
-  OtsArticle *article = get_article(self, FALSE);
-  if (article == NULL) {
-    rb_ots_init(self);
-    article = get_article(self, TRUE);
-  }
-
-  if (!ots_load_xml_dictionary(article, (unsigned const char *)dict_cstr)) {
-    rb_ots_free_article(self);
-    rb_raise(eLoadError, "Could not find dictionary file: %s", dict_cstr);
-  }
-
-  rb_iv_set(self, "@dict", dict);
-  return Qtrue;
-}
-
-VALUE rb_ots_parse_string(VALUE self, VALUE string) {
-  const unsigned char *string_cstr = (const unsigned char *)RSTRING_PTR(string);
-  size_t string_len = RSTRING_LEN(string);
-
-  rb_ots_init(self);
-  rb_ots_load_dictionary(self, rb_iv_get(self, "@dict"));
-  OtsArticle *article = get_article(self, TRUE);
-  ots_parse_stream(string_cstr, string_len, article);
-  ots_grade_doc(article);
-  return Qtrue;
-}
-
-VALUE rb_ots_highlight_lines(VALUE self, int lines) {
-  OtsArticle *article = get_article(self, TRUE);
-  ots_highlight_doc_lines(article, lines);
-  return Qtrue;
-}
-
-VALUE rb_ots_highlight_percent(VALUE self, int percent) {
-  OtsArticle *article = get_article(self, TRUE);
-  ots_highlight_doc(article, percent);
-  return Qtrue;
-}
-
-VALUE rb_ots_article_title(VALUE self) {
-  OtsArticle *article = get_article(self, TRUE);
-  if (article->title != NULL)
-    return rb_string(article->title);
-  else
-    return Qnil;
-}
-
-VALUE rb_ots_article_keywords(VALUE self) {
-  OtsArticle *article = get_article(self, TRUE);
-  GList* words = article->ImpWords;
-  VALUE iwords = rb_ary_new();
-  while (words != NULL) {
-    OtsWordEntery *data = (OtsWordEntery *)words->data;
-    if (data != NULL && strlen(data->word) > 0)
-      rb_ary_push(iwords, rb_string(data->word));
-    words = words->next;
-  }
-
-  return iwords;
-}
-
-VALUE rb_ots_get_highlighted_lines(VALUE self) {
-  OtsArticle *article = get_article(self, TRUE);
-  OtsSentence *sentence;
-  GList *curr_line = article->lines;
-  VALUE hlt_lines = rb_ary_new();
-
-  while (curr_line != NULL) {
-    sentence = (OtsSentence *)curr_line->data;
-    if (sentence->selected) {
-      size_t len;
-      unsigned char* content = ots_get_line_text(sentence, TRUE, &len);
-      VALUE hlt_line = rb_hash_new();
-      rb_hash_aset(hlt_line, ID2SYM(rb_intern("sentence")), rb_string((char *)content));
-      rb_hash_aset(hlt_line, ID2SYM(rb_intern("score")), LONG2FIX(sentence->score));
-      rb_ary_push(hlt_lines, hlt_line);
+    while (word_ptr) {
+        OtsWordEntry *data = (OtsWordEntry *)word_ptr->data;
+        if (data && strlen(data->word) > 0)
+            rb_ary_push(words, rb_enc_str_new2(data->word, encoding));
+        word_ptr = word_ptr->next;
     }
-    curr_line = g_list_next(curr_line);
-  }
 
-  return hlt_lines;
+    return words;
 }
 
-VALUE rb_summarize(VALUE self, VALUE options) {
-
-  VALUE lines = rb_hash_aref(options, ID2SYM(rb_intern("lines")));
-  VALUE percent = rb_hash_aref(options, ID2SYM(rb_intern("percent")));
-
-  if (lines != Qnil && percent != Qnil) {
-    rb_ots_free_article(self);
-    rb_raise(eArgumentError, "Cannot summarize on :lines & :percent, only one is allowed");
-  }
-  else if (lines == Qnil && percent == Qnil) {
-    rb_ots_free_article(self);
-    rb_raise(eArgumentError, "Need either :lines or :percent to summarize");
-  }
-
-  if (lines != Qnil)
-    rb_ots_highlight_lines(self, FIX2INT(lines));
-  else if (percent != Qnil) 
-    rb_ots_highlight_percent(self, FIX2INT(percent));
-  return rb_ots_get_highlighted_lines(self);
+VALUE ots_parse(int argc, VALUE *argv, VALUE self) {
+    VALUE article = article_allocate(cArticle);
+    article_initialize(argc, argv, article);
+    return article;
 }
 
 /* init */
 
 void Init_ots(void) {
-    eLoadError     = CONST_GET(rb_mKernel, "LoadError");
-    eRuntimeError  = CONST_GET(rb_mKernel, "RuntimeError");
-    eArgumentError = CONST_GET(rb_mKernel, "ArgumentError");
-    rb_cOTS = rb_define_class("OTS", rb_cObject);
-    rb_define_method(rb_cOTS, "load_dictionary", rb_ots_load_dictionary, 1);
-    rb_define_method(rb_cOTS, "parse", rb_ots_parse_string, 1);
-    rb_define_method(rb_cOTS, "highlight_lines", rb_ots_highlight_lines, 1);
-    rb_define_method(rb_cOTS, "highlight_percent", rb_ots_highlight_percent, 1);
-    rb_define_method(rb_cOTS, "highlighted_content", rb_ots_get_highlighted_lines, 0);
-    rb_define_method(rb_cOTS, "summarize", rb_summarize, 1);
-    rb_define_method(rb_cOTS, "title", rb_ots_article_title, 0);
-    rb_define_method(rb_cOTS, "keywords", rb_ots_article_keywords, 0);
+    mOTS      = rb_define_module("OTS");
+    cArticle  = rb_define_class_under(mOTS, "Article", rb_cObject);
+
+    rb_define_method(cArticle, "initialize", RUBY_METHOD_FUNC(article_initialize), -1);
+    rb_define_method(cArticle, "summarize",  RUBY_METHOD_FUNC(article_summarize),   1);
+    rb_define_method(cArticle, "title",      RUBY_METHOD_FUNC(article_title),       0);
+    rb_define_method(cArticle, "keywords",   RUBY_METHOD_FUNC(article_keywords),    0);
+
+    rb_define_module_function(mOTS, "parse", RUBY_METHOD_FUNC(ots_parse), -1);
+    rb_define_alloc_func(cArticle, article_allocate);
+
+    rb_define_const(mOTS, "VERSION", rb_str_new2(RUBY_OTS_VERSION));
 }

@@ -1,39 +1,31 @@
-require 'rubygems'
+require 'date'
+require 'pathname'
 require 'rake'
 require 'rake/clean'
 require 'rake/testtask'
-require 'rake/rdoctask'
 require 'rake/extensiontask'
 
-CLEAN << FileList[ 'ext/Makefile', 'ext/ots.so' ]
-
-begin
-  require 'jeweler'
-rescue LoadError
-  puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
+$rootdir = Pathname.new(__FILE__).dirname
+$gemspec = Gem::Specification.new do |s|
+  s.name              = "ots"
+  s.version           = "0"           # modify ext/version.h
+  s.date              = Date.today    
+  s.authors           = ["Bharanee Rathna"]
+  s.email             = ["deepfryed@gmail.com"]
+  s.summary           = "Open Text Summarizer interface for Ruby."
+  s.description       = "Ruby interface to libots libraries for unix."
+  s.homepage          = "http://github.com/deepfryed/ots"
+  s.files             = Dir["ext/**/*.{cc,c,h}"] + Dir["{ext,test}/*.rb"] + %w(README.md)
+  s.extensions        = %w(ext/extconf.rb)
+  s.require_paths     = %w(lib)
 end
 
-Jeweler::Tasks.new do |gem|
-  gem.name        = 'ots'
-  gem.summary     = 'Open Text Summarizer interface for Ruby.'
-  gem.description = 'Ruby interface to libots libraries for unix.'
-  gem.email       = 'deepfryed@gmail.com'
-  gem.homepage    = 'http://github.com/deepfryed/ots'
-  gem.authors     = ['Bharanee Rathna']
-  
-  gem.add_development_dependency 'shoulda', '>= 2.10'
-  
-  gem.files = FileList[
-    'lib/**/*.rb',
-    'ext/*.{h,c}',
-    'VERSION',
-    'README'
-  ]
-  gem.extensions  = FileList[ 'ext/**/extconf.rb' ]
-  gem.test_files  = FileList[ 'test/**/*_test.rb' ]
+desc 'Generate ots gemspec'
+task :gemspec do 
+  $gemspec.date    = Date.today
+  $gemspec.version = File.read($rootdir + 'ext/version.h').scan(/[\d.]+/).first
+  File.open('ots.gemspec', 'w') {|fh| fh.write($gemspec.to_ruby)}
 end
-
-Jeweler::GemcutterTasks.new
 
 Rake::ExtensionTask.new do |ext|
   ext.name    = 'ots'
@@ -41,19 +33,11 @@ Rake::ExtensionTask.new do |ext|
   ext.lib_dir = 'ext'
 end
 
-Rake::RDocTask.new do |rdoc|
-  version = File.exist?('VERSION') ? File.read('VERSION') : ""
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title = "ots #{version}"
-  rdoc.rdoc_files.include('README*')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-end
-
 Rake::TestTask.new(:test) do |test|
-  test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/*_test.rb'
+  test.libs   << 'ext' << 'test'
+  test.pattern = 'test/**/test_*.rb'
   test.verbose = true
 end
 
-task :test    => [ :compile, :check_dependencies ]
-task :default => :test
+task test:    [:compile]  
+task default: :test
