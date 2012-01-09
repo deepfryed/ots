@@ -5,3 +5,4 @@ ext/*
 ext/*.so
 pkg/
 tmp/
+*.gem

@@ -13,7 +13,6 @@ ots is an interface to libots - The open text summarizer
   * ruby >= 1.9.1
   * ruby development libraries    (debian: ruby1.9.1-dev)
   * libxml2 development libraries (debian: libxml2-dev)
-  * libots development libraries  (debian: libots-dev)
   * glib2.0 development libraries (debian: libglib2.0-dev)
 
 ## Usage
