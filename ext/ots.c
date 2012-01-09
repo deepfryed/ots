@@ -66,6 +66,9 @@ VALUE article_summary(OtsArticle *article, rb_encoding *encoding) {
       rb_hash_aset(line, ID2SYM(rb_intern("sentence")), rb_enc_str_new((char *)content, size, encoding));
       rb_hash_aset(line, ID2SYM(rb_intern("score")),    LONG2FIX(sentence->score));
       rb_ary_push(summary, line);
+
+      // reset this so subsequent calls work right.
+      sentence->selected = FALSE;
     }
 
     line_ptr = g_list_next(line_ptr);

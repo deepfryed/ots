@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libots-1/ots/libots.h>
+#include <libots.h>
 #include "version.h"
 
 #define TO_S(v)                     rb_funcall(v, rb_intern("to_s"), 0)

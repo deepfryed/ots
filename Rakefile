@@ -7,17 +7,20 @@ require 'rake/extensiontask'
 
 $rootdir = Pathname.new(__FILE__).dirname
 $gemspec = Gem::Specification.new do |s|
-  s.name              = "ots"
-  s.version           = "0"           # modify ext/version.h
+  s.name              = 'ots'
+  s.version           = '0'           # modify ext/version.h
   s.date              = Date.today    
-  s.authors           = ["Bharanee Rathna"]
-  s.email             = ["deepfryed@gmail.com"]
-  s.summary           = "Open Text Summarizer interface for Ruby."
-  s.description       = "Ruby interface to libots libraries for unix."
-  s.homepage          = "http://github.com/deepfryed/ots"
-  s.files             = Dir["ext/**/*.{cc,c,h}"] + Dir["{ext,test}/*.rb"] + %w(README.md) + Dir["*/*.xml"]
+  s.authors           = ['Bharanee Rathna']
+  s.email             = ['deepfryed@gmail.com']
+  s.summary           = 'Open Text Summarizer interface for Ruby.'
+  s.description       = 'Ruby interface to libots libraries for unix.'
+  s.homepage          = 'http://github.com/deepfryed/ots'
+  s.files             = Dir['ext/**/*.{cc,c,h}'] + Dir['{ext,test}/*.rb'] + %w(README.md) + Dir['*/*.xml']
   s.extensions        = %w(ext/extconf.rb)
   s.require_paths     = %w(lib)
+
+  s.add_development_dependency('rake')
+  s.add_development_dependency('rake-compiler')
 end
 
 desc 'Generate ots gemspec'
