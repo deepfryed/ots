@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'helper'
 
 describe 'OTS::Article' do
@@ -40,5 +41,12 @@ describe 'OTS::Article' do
     article = OTS.parse(text)
     summary = article.summarize(lines: 1).first[:sentence]
     assert_equal text, summary
+  end
+
+  describe 'dictionaries' do
+    it 'should load the french dictionary' do
+      article = OTS.parse("j'ai besoin de la crème glacée. il fait trop chaud en australie.", "fr")
+      assert_equal "j'ai besoin de la crème glacée.", article.summarize(lines: 1).first[:sentence]
+    end
   end
 end

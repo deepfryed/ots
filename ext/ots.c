@@ -1,4 +1,7 @@
 #include "ots.h"
+#include <sys/types.h>
+#include <dirent.h>
+#include <errno.h>
 
 static VALUE mOTS, cArticle;
 
@@ -133,6 +136,26 @@ VALUE ots_parse(int argc, VALUE *argv, VALUE self) {
     return article;
 }
 
+VALUE ots_dictionaries(VALUE self) {
+    DIR *dir;
+    struct dirent *entry;
+    VALUE dictionaries = rb_ary_new();
+
+    if ((dir = opendir(DICTIONARY_DIR))) {
+        while ((entry = readdir(dir))) {
+            // entry->d_type is not portable.
+            if (strstr(entry->d_name, ".xml"))
+                rb_ary_push(dictionaries, rb_str_new(entry->d_name, strlen(entry->d_name) - 4));
+        }
+    }
+    else {
+        rb_raise(rb_eIOError, "unable to open dictionary directory: %s", strerror(errno));
+    }
+
+    closedir(dir);
+    return dictionaries;
+}
+
 /* init */
 
 void Init_ots(void) {
@@ -144,7 +167,9 @@ void Init_ots(void) {
     rb_define_method(cArticle, "title",      RUBY_METHOD_FUNC(article_title),       0);
     rb_define_method(cArticle, "keywords",   RUBY_METHOD_FUNC(article_keywords),    0);
 
-    rb_define_module_function(mOTS, "parse", RUBY_METHOD_FUNC(ots_parse), -1);
+    rb_define_module_function(mOTS, "parse",        RUBY_METHOD_FUNC(ots_parse),       -1);
+    rb_define_module_function(mOTS, "dictionaries", RUBY_METHOD_FUNC(ots_dictionaries), 0);
+
     rb_define_alloc_func(cArticle, article_allocate);
 
     rb_define_const(mOTS, "VERSION", rb_str_new2(RUBY_OTS_VERSION));
