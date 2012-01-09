@@ -46,13 +46,14 @@ ots is an interface to libots - The open text summarizer
 
 ```
   OTS
-    .parse #=> OTS::Article
+    .parse        #=> OTS::Article
+    .dictionaries #=> Array
 
   OTS::Article
     .new
-    #summarize
-    #keywords
-    #title
+    #summarize    #=> Array
+    #keywords     #=> Array
+    #title        #=> String
 
 ```
 
@@ -70,6 +71,8 @@ ots is an interface to libots - The open text summarizer
   article.keywords
   article.summarize(lines: 1)
   article.summarize(percent: 50)
+
+  OTS.dictionaries #=> list of supported dictionaries
 ```
 
 ## License
