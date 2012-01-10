@@ -76,6 +76,10 @@ ots is an interface to libots - The [open text summarizer](http://libots.sourcef
   OTS.languages #=> list of supported languages dictionaries baked-in to libots
 ```
 
+## See Also
+
+[https://github.com/ssoper/summarize](https://github.com/ssoper/summarize)
+
 ## License
 
 [Creative Commons Attribution - CC BY](http://creativecommons.org/licenses/by/3.0)
