@@ -12,12 +12,12 @@ describe 'OTS' do
   end
 
   it 'should return a list of dictonaries' do
-    dictionaries = OTS.dictionaries
+    languages = OTS.languages
 
     %w(en fr it es de ru).each do |name|
-      assert dictionaries.include?(name), "has #{name} dictionary"
+      assert languages.include?(name), "has #{name} language dictionary"
     end
 
-    assert_empty dictionaries.reject {|name| name.size == 2}, "dictionaries path should not have other junk"
+    assert_empty languages.reject {|name| name.size == 2}, "dictionaries path should not have other junk"
   end
 end

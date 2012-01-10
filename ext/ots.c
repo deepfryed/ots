@@ -30,18 +30,28 @@ void article_load_dictionary(OtsArticle *article, char *name) {
 }
 
 VALUE article_initialize(int argc, VALUE *argv, VALUE self) {
-    VALUE text, dictionary;
+    VALUE text, options, language, dictionary = Qnil;
     OtsArticle *article = article_handle(self);
 
-    rb_scan_args(argc, argv, "11", &text, &dictionary);
+    rb_scan_args(argc, argv, "11", &text, &options);
+
+    language = rb_str_new2("en");
 
     if (TYPE(text) != T_STRING)
         rb_raise(rb_eArgError, "invalid +text+");
 
-    if (NIL_P(dictionary))
-        article_load_dictionary(article, "en");
-    else
+    if (!NIL_P(options)) {
+        if (TYPE(options) != T_HASH)
+            rb_raise(rb_eArgError, "invalid +options+ hash");
+
+        dictionary = rb_hash_aref(options, ID2SYM(rb_intern("dictionary")));
+        language   = rb_hash_aref(options, ID2SYM(rb_intern("language")));
+    }
+
+    if (!NIL_P(dictionary))
         article_load_dictionary(article, CSTRING(dictionary));
+    else
+        article_load_dictionary(article, CSTRING(language));
 
     ots_parse_stream(RSTRING_PTR(text), RSTRING_LEN(text), article);
     ots_grade_doc(article);
@@ -87,11 +97,11 @@ VALUE article_summarize(VALUE self, VALUE options) {
     if (TYPE(options) != T_HASH)
         rb_raise(rb_eArgError, "expect an options hash");
 
-    lines   = rb_hash_aref(options, ID2SYM(rb_intern("lines")));
+    lines   = rb_hash_aref(options, ID2SYM(rb_intern("sentences")));
     percent = rb_hash_aref(options, ID2SYM(rb_intern("percent")));
 
     if (NIL_P(lines) && NIL_P(percent))
-        rb_raise(rb_eArgError, "expect +lines+ or +percent+ to be provided");
+        rb_raise(rb_eArgError, "expect +sentences+ or +percent+");
 
     if (lines != Qnil)
         ots_highlight_doc_lines(article, NUM2INT(lines));
@@ -101,9 +111,13 @@ VALUE article_summarize(VALUE self, VALUE options) {
     return article_summary(article, (rb_encoding *)rb_iv_get(self, "@encoding"));
 }
 
-VALUE article_title(VALUE self) {
+VALUE article_topics(VALUE self) {
     OtsArticle *article = article_handle(self);
-    return (article->title ? rb_enc_str_new2(article->title, (rb_encoding*)rb_iv_get(self, "@encoding")) : Qnil);
+
+    return
+        article->title ?
+            rb_str_split(rb_enc_str_new2(article->title, (rb_encoding*)rb_iv_get(self, "@encoding")), ",") :
+            Qnil;
 }
 
 typedef struct {
@@ -136,16 +150,16 @@ VALUE ots_parse(int argc, VALUE *argv, VALUE self) {
     return article;
 }
 
-VALUE ots_dictionaries(VALUE self) {
+VALUE ots_languages(VALUE self) {
     DIR *dir;
     struct dirent *entry;
-    VALUE dictionaries = rb_ary_new();
+    VALUE languages = rb_ary_new();
 
     if ((dir = opendir(DICTIONARY_DIR))) {
         while ((entry = readdir(dir))) {
             // entry->d_type is not portable.
             if (strstr(entry->d_name, ".xml"))
-                rb_ary_push(dictionaries, rb_str_new(entry->d_name, strlen(entry->d_name) - 4));
+                rb_ary_push(languages, rb_str_new(entry->d_name, strlen(entry->d_name) - 4));
         }
     }
     else {
@@ -153,7 +167,7 @@ VALUE ots_dictionaries(VALUE self) {
     }
 
     closedir(dir);
-    return dictionaries;
+    return languages;
 }
 
 /* init */
@@ -164,11 +178,11 @@ void Init_ots(void) {
 
     rb_define_method(cArticle, "initialize", RUBY_METHOD_FUNC(article_initialize), -1);
     rb_define_method(cArticle, "summarize",  RUBY_METHOD_FUNC(article_summarize),   1);
-    rb_define_method(cArticle, "title",      RUBY_METHOD_FUNC(article_title),       0);
+    rb_define_method(cArticle, "topics",     RUBY_METHOD_FUNC(article_topics),      0);
     rb_define_method(cArticle, "keywords",   RUBY_METHOD_FUNC(article_keywords),    0);
 
-    rb_define_module_function(mOTS, "parse",        RUBY_METHOD_FUNC(ots_parse),       -1);
-    rb_define_module_function(mOTS, "dictionaries", RUBY_METHOD_FUNC(ots_dictionaries), 0);
+    rb_define_module_function(mOTS, "parse",     RUBY_METHOD_FUNC(ots_parse),      -1);
+    rb_define_module_function(mOTS, "languages", RUBY_METHOD_FUNC(ots_languages),   0);
 
     rb_define_alloc_func(cArticle, article_allocate);
 

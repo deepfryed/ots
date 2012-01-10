@@ -59,12 +59,13 @@ ots_load_xml_dictionary (OtsArticle * Doc, const char *name)
   char *local_dict_name;
 
   dict_name = g_strdup_printf ("%s%s.xml", DICTIONARY_DIR, name);
-  local_dict_name = g_strdup_printf ("%s.xml", name);
+  local_dict_name = g_strdup_printf ("%s", name);
 
+  if (g_file_test(local_dict_name,G_FILE_TEST_EXISTS))
+    doc = xmlReadFile (local_dict_name, 0, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
+  if (doc == NULL && g_file_test(dict_name,G_FILE_TEST_EXISTS))
+    doc = xmlReadFile (dict_name, 0, XML_PARSE_NOERROR | XML_PARSE_NOWARNING);
 
-	if (g_file_test(local_dict_name,G_FILE_TEST_EXISTS))
-		  doc = xmlParseFile (local_dict_name); /* it warns to the screen so we cant use it; enable for web services only */
-  if (doc == NULL)   doc = xmlParseFile (dict_name);
   if (doc == NULL) return (FALSE);
 
   head = xmlDocGetRootElement (doc);
