@@ -2,11 +2,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{ots}
-  s.version = "0.5.0"
+  s.version = "0.5.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Bharanee Rathna"]
-  s.date = %q{2012-01-10}
+  s.date = %q{2012-01-11}
   s.description = %q{Ruby interface to libots libraries for unix.}
   s.email = ["deepfryed@gmail.com"]
   s.extensions = ["ext/extconf.rb"]

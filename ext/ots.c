@@ -10,6 +10,10 @@ static void article_free(OtsArticle *article) {
       ots_free_article(article);
 }
 
+rb_encoding* article_encoding(VALUE self) {
+    return rb_enc_from_index((int)rb_iv_get(self, "@encoding"));
+}
+
 VALUE article_allocate(VALUE klass) {
     OtsArticle *article = ots_new_article();
     return Data_Wrap_Struct(klass, 0, article_free, article);
@@ -56,7 +60,7 @@ VALUE article_initialize(int argc, VALUE *argv, VALUE self) {
     ots_parse_stream(RSTRING_PTR(text), RSTRING_LEN(text), article);
     ots_grade_doc(article);
 
-    rb_iv_set(self, "@encoding", (VALUE)rb_enc_get(text));
+    rb_iv_set(self, "@encoding", (VALUE)rb_enc_get_index(text));
 
     return self;
 }
@@ -108,7 +112,7 @@ VALUE article_summarize(VALUE self, VALUE options) {
     else
         ots_highlight_doc(article, NUM2INT(percent));
 
-    return article_summary(article, (rb_encoding *)rb_iv_get(self, "@encoding"));
+    return article_summary(article, article_encoding(self));
 }
 
 VALUE article_topics(VALUE self) {
@@ -116,7 +120,7 @@ VALUE article_topics(VALUE self) {
 
     return
         article->title ?
-            rb_str_split(rb_enc_str_new2(article->title, (rb_encoding*)rb_iv_get(self, "@encoding")), ",") :
+            rb_str_split(rb_enc_str_new2(article->title, article_encoding(self)), ",") :
             Qnil;
 }
 
@@ -129,7 +133,7 @@ typedef struct {
 
 VALUE article_keywords(VALUE self) {
     OtsArticle *article = article_handle(self);
-    rb_encoding *encoding = (rb_encoding*)rb_iv_get(self, "@encoding");
+    rb_encoding *encoding = article_encoding(self);
 
     VALUE words     = rb_ary_new();
     GList* word_ptr = article->ImpWords;
