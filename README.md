@@ -1,6 +1,6 @@
 # OTS
 
-ots is an interface to libots - The [open text summarizer](http://libots.sourceforge.net/).
+ots is an interface to libots - The [Open Text Summarizer](http://libots.sourceforge.net/).
 
 ## Dependencies
 
@@ -73,7 +73,7 @@ ots is an interface to libots - The [open text summarizer](http://libots.sourcef
   article.summarize(percent: 50)
   article.summarize(sentences: 1)
 
-  OTS.languages #=> list of supported languages dictionaries baked-in to libots
+  OTS.languages #=> list of supported language dictionaries baked-in to libots
 ```
 
 ## See Also
