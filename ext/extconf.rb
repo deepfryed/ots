@@ -16,10 +16,20 @@ if glib_ldflags.empty?
 end
 
 dir      = File.expand_path(File.dirname(__FILE__) + '/../dictionaries')
-$CFLAGS  = glib_cflags + %Q{ -I/usr/include/libxml2 -DDICTIONARY_DIR='"#{dir}/"'}
-$LDFLAGS = glib_ldflags
+$CFLAGS  = glib_cflags   + %Q{ -Ilibots -I/usr/include/libxml2 -DDICTIONARY_DIR='"#{dir}/"'}
+$LDFLAGS = glib_ldflags  + %Q{ -Llibots}
 
 find_library('glib-2.0', 'main')
 find_library('xml2',     'main')
+
+# ugly mkmf hack: manually assign source and object directories.
+$srcs = Dir["{libots/*.c,*.c}"]
+$objs = $srcs.map {|name| File.join(File.dirname(name), File.basename(name, ".c") + ".o")}
+
+class File
+  def self.basename name
+    name
+  end
+end
 
 create_makefile 'ots'
