@@ -19,8 +19,8 @@ dir      = File.expand_path(File.dirname(__FILE__) + '/../dictionaries')
 $CFLAGS  = glib_cflags   + %Q{ -Ilibots -I/usr/include/libxml2 -DDICTIONARY_DIR='"#{dir}/"'}
 $LDFLAGS = glib_ldflags  + %Q{ -Llibots}
 
-find_library('glib-2.0', 'main')
-find_library('xml2',     'main')
+find_library('glib-2.0', 'main') or raise "unable to find glib-2.0"
+find_library('xml2',     'main') or raise "unable to find libxml2"
 
 # ugly mkmf hack: manually assign source and object directories.
 $srcs = Dir["{libots/*.c,*.c}"]
