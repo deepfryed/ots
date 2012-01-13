@@ -40,6 +40,11 @@ ots is an interface to libots - The [Open Text Summarizer](http://libots.sourcef
  # install glib
  brew install glib
 
+ # setup the environment variables in order to install ots
+ export CPPFLAGS=-I/usr/local/Cellar/glib/2.30.2/include/glib-2.0/
+ export LDFLAGS=-L/usr/local/Cellar/glib/2.30.2/lib/
+ export PKG_CONFIG_PATH=/usr/local/Cellar/glib/2.30.2/lib/pkgconfig/
+ 
  # install ots
  gem install ots
 
