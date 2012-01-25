@@ -33,11 +33,11 @@ end
 Rake::ExtensionTask.new do |ext|
   ext.name    = 'ots'
   ext.ext_dir = 'ext'
-  ext.lib_dir = 'ext'
+  ext.lib_dir = 'lib'
 end
 
 Rake::TestTask.new(:test) do |test|
-  test.libs   << 'ext' << 'test'
+  test.libs   << 'ext' << 'lib' << 'test'
   test.pattern = 'test/**/test_*.rb'
   test.verbose = true
 end
