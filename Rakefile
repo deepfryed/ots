@@ -15,7 +15,7 @@ $gemspec = Gem::Specification.new do |s|
   s.summary           = 'Open Text Summarizer interface for Ruby.'
   s.description       = 'Ruby interface to libots libraries for unix.'
   s.homepage          = 'http://github.com/deepfryed/ots'
-  s.files             = Dir['ext/**/*.{cc,c,h}'] + Dir['{ext,test}/*.rb'] + %w(README.md CHANGELOG) + Dir['*/*.xml']
+  s.files             = Dir['ext/**/*.{c,h}'] + Dir['{ext,test,lib}/**/*.rb'] + %w(README.md CHANGELOG) + Dir['*/*.xml']
   s.extensions        = %w(ext/extconf.rb)
   s.require_paths     = %w(lib)
 
