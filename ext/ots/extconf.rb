@@ -15,8 +15,7 @@ if glib_ldflags.empty?
   glib_ldflags = libs.split(/\s+/).map {|lib| "-l#{lib}"}.join(' ')
 end
 
-dir      = File.expand_path(File.dirname(__FILE__) + '/../dictionaries')
-$CFLAGS  = glib_cflags   + %Q{ -Ilibots -I/usr/include/libxml2 -DDICTIONARY_DIR='"#{dir}/"'}
+$CFLAGS  = glib_cflags   + %Q{ -Ilibots -I/usr/include/libxml2}
 $LDFLAGS = glib_ldflags  + %Q{ -Llibots}
 
 find_library('glib-2.0', 'main') or raise "unable to find glib-2.0"

@@ -4,6 +4,7 @@
 #include <errno.h>
 
 static VALUE mOTS, cArticle;
+char *DICTIONARY_DIR;
 
 static void article_free(OtsArticle *article) {
     if (article)
@@ -174,6 +175,16 @@ VALUE ots_languages(VALUE self) {
     return languages;
 }
 
+VALUE ots_set_dictionary_path(VALUE self, VALUE path) {
+    char *string = CSTRING(path);
+    if (DICTIONARY_DIR)
+        free(DICTIONARY_DIR);
+
+    DICTIONARY_DIR = (char *)malloc(strlen(string) + 2);
+    sprintf(DICTIONARY_DIR, "%s/", string);
+    return Qnil;
+}
+
 /* init */
 
 void Init_ots(void) {
@@ -185,10 +196,12 @@ void Init_ots(void) {
     rb_define_method(cArticle, "topics",     RUBY_METHOD_FUNC(article_topics),      0);
     rb_define_method(cArticle, "keywords",   RUBY_METHOD_FUNC(article_keywords),    0);
 
-    rb_define_module_function(mOTS, "parse",     RUBY_METHOD_FUNC(ots_parse),      -1);
-    rb_define_module_function(mOTS, "languages", RUBY_METHOD_FUNC(ots_languages),   0);
+    rb_define_module_function(mOTS, "parse",                RUBY_METHOD_FUNC(ots_parse),              -1);
+    rb_define_module_function(mOTS, "languages",            RUBY_METHOD_FUNC(ots_languages),           0);
+    rb_define_module_function(mOTS, "set_dictionary_path",  RUBY_METHOD_FUNC(ots_set_dictionary_path), 1);
 
     rb_define_alloc_func(cArticle, article_allocate);
 
     rb_define_const(mOTS, "VERSION", rb_str_new2(RUBY_OTS_VERSION));
+    DICTIONARY_DIR = 0;
 }

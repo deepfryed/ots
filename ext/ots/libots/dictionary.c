@@ -28,6 +28,8 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
+extern char *DICTIONARY_DIR;
+
 
 /* loads the xml dictionary file to memory*/
 

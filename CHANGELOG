@@ -1,3 +1,16 @@
+=== 0.5.4 (2012-02-03)
+
+* move extension into subdirectory.
+* added OTS#set_dictionary_path to avoid compile time path resolution.
+
+=== 0.5.3 (2012-01-27)
+
+* cleanup dependencies.
+
+=== 0.5.2 (2012-01-25)
+
+* added OTS::Grader
+
 === 0.5.1 (2012-01-11)
 
 * GC bugfix: hang on to encoding index rather than rb_encoding pointer.
