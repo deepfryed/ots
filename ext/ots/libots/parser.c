@@ -95,6 +95,9 @@ ots_parser_should_break(const char *aWord,const OtsStemRule * rule)
       
     }
 
+  // TODO: single character with a '.' is probably an initial but this needs to be expressed as a language rule.
+  if (strlen(aWord) == 2 && aWord[strlen(aWord) - 1] == '.')
+    return 0;
 
   for (li = (GList *) rule->ParserDontBreak; li != NULL; li = li->next)
     {
