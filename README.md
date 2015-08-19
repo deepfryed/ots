@@ -87,4 +87,4 @@ ots is an interface to libots - The [Open Text Summarizer](http://libots.sourcef
 
 ## License
 
-[Creative Commons Attribution - CC BY](http://creativecommons.org/licenses/by/3.0)
+MIT
