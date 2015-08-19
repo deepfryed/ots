@@ -26,7 +26,7 @@ describe 'OTS::Article' do
   end
 
 
-  it 'should extract keywords from given document' do
+  it 'should summarize sentences from given document' do
     lines  = @article.summarize(sentences: 2).map {|line| [line[:sentence].gsub(/\s+/, ' ').strip, line[:score]]}
     expect = [
       ["The hawksbill turtle is a critically endangered sea turtle belonging to the family Cheloniidae.", 48],
